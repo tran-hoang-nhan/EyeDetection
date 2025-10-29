@@ -1,5 +1,6 @@
+
 opencv-python
-numpy
 scikit-learn
-pillow
-pygame
+numpy
+kagglehub
+pickle-mixin

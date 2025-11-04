@@ -1,6 +1,23 @@
 import cv2
 import numpy as np
 
+def preprocess_eye_image(image):
+    """
+    Preprocess eye image for better feature extraction
+    """
+    # Convert to grayscale if needed
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Apply CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    image = clahe.apply(image)
+
+    # Gaussian blur to reduce noise
+    image = cv2.GaussianBlur(image, (3, 3), 0)
+
+    return image
+
 def extract_eye_features(image):
     """Extract 25 advanced features from eye region"""
     if image is None or image.size == 0:
@@ -48,37 +65,3 @@ def extract_eye_features(image):
     features.extend(hist.flatten())
 
     return np.array(features)
-
-def preprocess_eye_image(image):
-    """
-    Preprocess eye image for better feature extraction
-    """
-    # Convert to grayscale if needed
-    if len(image.shape) == 3:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    image = clahe.apply(image)
-
-    # Gaussian blur to reduce noise
-    image = cv2.GaussianBlur(image, (3, 3), 0)
-
-    return image
-
-def analyze_eye_features(image):
-    """
-    Analyze and return detailed eye features for debugging
-    """
-    features = extract_eye_features(image)
-
-    feature_names = [
-        'mean', 'std', 'var', 'min', 'max', 'median',  # Statistical (6)
-        'center_mean', 'center_std', 'center_diff',     # Texture (3)
-        'edge_density',                                 # Edge (1)
-        'grad_x_mean', 'grad_y_mean', 'grad_x_std', 'grad_y_std',  # Gradient (4)
-        'morph_open', 'morph_close', 'open_diff', 'close_diff',    # Morphological (4)
-        'hist_0', 'hist_1', 'hist_2', 'hist_3', 'hist_4', 'hist_5', 'hist_6',  # Histogram (7)
-    ]
-
-    return dict(zip(feature_names, features))

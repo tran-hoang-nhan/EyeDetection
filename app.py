@@ -1,205 +1,201 @@
-
 import cv2
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import threading
-import time
-from eye_detector import EyeStateDetector
+from utils.eye_detector import EyeStateDetector
 
-class EyeStateApp:
-    def __init__(self, window, window_title):
-        self.window = window
-        self.window.title(window_title)
-        self.window.configure(bg='#f0f0f0')
+class EyeDetectionApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Eye State Detection System")
+        self.root.geometry("800x600")
         
-        # Initialize video capture
-        self.video_source = 0  # Default camera
-        self.vid = cv2.VideoCapture(self.video_source)
-        
-        # Create detector
+        # Initialize detector
         self.detector = EyeStateDetector()
         
-        # Create a canvas for the video
-        self.canvas_width = 640
-        self.canvas_height = 480
-        self.canvas = tk.Canvas(window, width=self.canvas_width, height=self.canvas_height)
-        self.canvas.pack(padx=10, pady=10)
+        # Video capture
+        self.cap = None
+        self.running = False
         
-        # Create status frame
-        self.status_frame = ttk.Frame(window)
-        self.status_frame.pack(pady=10, fill=tk.X)
+        # Current states
+        self.left_eye_state = "Unknown"
+        self.right_eye_state = "Unknown"
         
-        # Left Eye Status
-        ttk.Label(self.status_frame, text="Left Eye:", font=('Arial', 14)).grid(row=0, column=0, padx=10)
-        self.left_eye_status = ttk.Label(self.status_frame, text="Unknown", font=('Arial', 14, 'bold'))
-        self.left_eye_status.grid(row=0, column=1, padx=10)
+        self.setup_ui()
+    
+    def setup_ui(self):
+        """Setup the user interface"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        ttk.Label(self.status_frame, text="Right Eye:", font=('Arial', 14)).grid(row=0, column=2, padx=10)
-        self.right_eye_status = ttk.Label(self.status_frame, text="Unknown", font=('Arial', 14, 'bold'))
-        self.right_eye_status.grid(row=0, column=3, padx=10)
+        # Title
+        title_label = ttk.Label(main_frame, text="Eye State Detection System", 
+                               font=("Arial", 16, "bold"))
+        title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
-        # Overall Status
-        ttk.Label(self.status_frame, text="Status:", font=('Arial', 14)).grid(row=0, column=4, padx=10)
-        self.overall_status = ttk.Label(self.status_frame, text="Unknown", font=('Arial', 14, 'bold'))
-        self.overall_status.grid(row=0, column=5, padx=10)
+        # Video frame
+        self.video_label = ttk.Label(main_frame, text="Camera feed will appear here")
+        self.video_label.grid(row=1, column=0, columnspan=3, pady=(0, 20))
         
-        # Button frame
-        self.btn_frame = ttk.Frame(window)
-        self.btn_frame.pack(pady=10)
+        # Eye state display
+        state_frame = ttk.LabelFrame(main_frame, text="Eye States", padding="10")
+        state_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
         
-        # Start button
-        self.start_btn = ttk.Button(self.btn_frame, text="Start", command=self.start_detection)
-        self.start_btn.grid(row=0, column=0, padx=10)
+        # Left eye
+        ttk.Label(state_frame, text="Left Eye:").grid(row=0, column=0, sticky=tk.W)
+        self.left_eye_label = ttk.Label(state_frame, text="Unknown", 
+                                       font=("Arial", 12, "bold"))
+        self.left_eye_label.grid(row=0, column=1, padx=(10, 0), sticky=tk.W)
         
-        # Stop button
-        self.stop_btn = ttk.Button(self.btn_frame, text="Stop", command=self.stop_detection)
-        self.stop_btn.grid(row=0, column=1, padx=10)
-        self.stop_btn["state"] = "disabled"
+        # Right eye
+        ttk.Label(state_frame, text="Right Eye:").grid(row=1, column=0, sticky=tk.W)
+        self.right_eye_label = ttk.Label(state_frame, text="Unknown", 
+                                        font=("Arial", 12, "bold"))
+        self.right_eye_label.grid(row=1, column=1, padx=(10, 0), sticky=tk.W)
         
-        # Exit button
-        self.exit_btn = ttk.Button(self.btn_frame, text="Exit", command=self.on_close)
-        self.exit_btn.grid(row=0, column=2, padx=10)
+        # Control buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=3, column=0, columnspan=3, pady=(0, 10))
         
-        # Variables for video processing
-        self.processing = False
-        self.thread = None
+        self.start_button = ttk.Button(button_frame, text="Start Detection", 
+                                      command=self.start_detection)
+        self.start_button.grid(row=0, column=0, padx=(0, 10))
         
-        # Status variables
-        self.closed_count = 0
-        self.consecutive_closed = 0
-        self.max_consecutive_closed = 5  # Number of consecutive frames with closed eyes to change status
+        self.stop_button = ttk.Button(button_frame, text="Stop Detection", 
+                                     command=self.stop_detection, state="disabled")
+        self.stop_button.grid(row=0, column=1, padx=(0, 10))
         
-        # Set window close handler
-        self.window.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.exit_button = ttk.Button(button_frame, text="Exit", 
+                                     command=self.exit_app)
+        self.exit_button.grid(row=0, column=2)
         
+        # Status bar
+        self.status_var = tk.StringVar()
+        self.status_var.set("Ready")
+        status_bar = ttk.Label(main_frame, textvariable=self.status_var, 
+                              relief=tk.SUNKEN, anchor=tk.W)
+        status_bar.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 0))
+    
     def start_detection(self):
-        """Start eye state detection"""
-        if not self.processing:
-            self.processing = True
-            self.start_btn["state"] = "disabled"
-            self.stop_btn["state"] = "normal"
+        """Start eye detection"""
+        try:
+            self.cap = cv2.VideoCapture(0)
+            if not self.cap.isOpened():
+                self.status_var.set("Error: Cannot open camera")
+                return
             
-            # Start processing thread
-            self.thread = threading.Thread(target=self.update_frame)
-            self.thread.daemon = True
-            self.thread.start()
+            self.running = True
+            self.start_button.config(state="disabled")
+            self.stop_button.config(state="normal")
+            self.status_var.set("Detection started")
+            
+            # Start detection thread
+            self.detection_thread = threading.Thread(target=self.detection_loop)
+            self.detection_thread.daemon = True
+            self.detection_thread.start()
+            
+        except Exception as e:
+            self.status_var.set(f"Error: {str(e)}")
     
     def stop_detection(self):
-        """Stop eye state detection"""
-        if self.processing:
-            self.processing = False
-            self.start_btn["state"] = "normal"
-            self.stop_btn["state"] = "disabled"
+        """Stop eye detection"""
+        self.running = False
+        if self.cap:
+            self.cap.release()
+        
+        self.start_button.config(state="normal")
+        self.stop_button.config(state="disabled")
+        self.status_var.set("Detection stopped")
+        
+        # Clear video display
+        self.video_label.config(image="", text="Camera feed will appear here")
+        
+        # Reset eye states
+        self.update_eye_states("Unknown", "Unknown")
     
-    def update_frame(self):
-        """Update frame from video source"""
-        while self.processing:
-            ret, frame = self.vid.read()
-            
-            if ret:
-                # Process the frame
-                processed_frame, eye_states = self.detector.process_frame(frame)
+    def detection_loop(self):
+        """Main detection loop"""
+        while self.running:
+            try:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                
+                # Process frame
+                result_frame, results = self.detector.process_frame(frame)
+                
+                # Draw results
+                final_frame = self.detector.draw_results(result_frame, results)
                 
                 # Update eye states
-                self.update_eye_states(eye_states)
+                if results:
+                    result = results[0]  # Use first face
+                    self.update_eye_states(
+                        result['left_ml_state'], 
+                        result['right_ml_state']
+                    )
+                else:
+                    self.update_eye_states("No Face", "No Face")
                 
-                # Convert to display format
-                self.photo = self.convert_frame_to_photo(processed_frame)
+                # Convert frame for display
+                self.update_video_display(final_frame)
                 
-                # Update canvas
-                self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
-            
-            time.sleep(0.03)  # ~30 fps
+            except Exception as e:
+                print(f"Detection error: {e}")
+                break
     
-    def update_eye_states(self, eye_states):
-        """Update the eye state indicators"""
-        if not eye_states:
-            # No eyes detected
-            self.left_eye_status.config(text="Not Detected", foreground="black")
-            self.right_eye_status.config(text="Not Detected", foreground="black")
-            return
-        
-        # Sort by position (usually left eye first, right eye second)
-        # This is a simplification - in a real app, you'd track eyes more precisely
-        if len(eye_states) >= 2:
-            left_state = eye_states[0]
-            right_state = eye_states[1]
+    def update_video_display(self, frame):
+        """Update video display in GUI"""
+        try:
+            # Resize frame
+            frame = cv2.resize(frame, (640, 480))
             
-            # Update left eye
-            self.left_eye_status.config(
-                text=left_state, 
-                foreground="green" if left_state == "Open" else "red"
-            )
+            # Convert BGR to RGB
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
-            # Update right eye
-            self.right_eye_status.config(
-                text=right_state, 
-                foreground="green" if right_state == "Open" else "red"
-            )
+            # Convert to PIL Image
+            pil_image = Image.fromarray(rgb_frame)
             
-            # Check overall state
-            if left_state == "Closed" and right_state == "Closed":
-                self.consecutive_closed += 1
-            else:
-                self.consecutive_closed = 0
+            # Convert to PhotoImage
+            photo = ImageTk.PhotoImage(pil_image)
             
-            # Update overall status based on consecutive closed frames
-            if self.consecutive_closed >= self.max_consecutive_closed:
-                self.overall_status.config(text="Eyes Closed", foreground="red")
-            else:
-                self.overall_status.config(text="Eyes Open", foreground="green")
-        
-        elif len(eye_states) == 1:
-            # Only one eye detected
-            state = eye_states[0]
-            self.left_eye_status.config(
-                text=state, 
-                foreground="green" if state == "Open" else "red"
-            )
-            self.right_eye_status.config(text="Not Detected", foreground="black")
+            # Update label
+            self.video_label.config(image=photo, text="")
+            self.video_label.image = photo  # Keep a reference
             
-            # Update overall based on the one eye
-            if state == "Closed":
-                self.consecutive_closed += 1
-            else:
-                self.consecutive_closed = 0
-                
-            if self.consecutive_closed >= self.max_consecutive_closed:
-                self.overall_status.config(text="Eyes Closed", foreground="red")
-            else:
-                self.overall_status.config(text="Eyes Open", foreground="green")
+        except Exception as e:
+            print(f"Display error: {e}")
     
-    def convert_frame_to_photo(self, frame):
-        """Convert OpenCV frame to PhotoImage for Tkinter"""
-        # Convert from BGR to RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    def update_eye_states(self, left_state, right_state):
+        """Update eye state labels"""
+        self.left_eye_state = left_state
+        self.right_eye_state = right_state
         
-        # Convert to PIL Image
-        pil_image = Image.fromarray(rgb_frame)
+        # Update labels with colors
+        left_color = "green" if left_state == "Open" else "red" if left_state == "Closed" else "black"
+        right_color = "green" if right_state == "Open" else "red" if right_state == "Closed" else "black"
         
-        # Resize if needed
-        if pil_image.width != self.canvas_width or pil_image.height != self.canvas_height:
-            pil_image = pil_image.resize((self.canvas_width, self.canvas_height))
-        
-        # Convert to PhotoImage
-        return ImageTk.PhotoImage(image=pil_image)
+        self.left_eye_label.config(text=left_state, foreground=left_color)
+        self.right_eye_label.config(text=right_state, foreground=right_color)
     
-    def on_close(self):
-        """Handle window close event"""
-        # Stop processing
-        self.processing = False
-        
-        # Release video resource
-        if self.vid.isOpened():
-            self.vid.release()
-        
-        # Close window
-        self.window.destroy()
+    def exit_app(self):
+        """Exit the application"""
+        self.stop_detection()
+        self.root.quit()
+        self.root.destroy()
 
-# Run the application
-if __name__ == "__main__":
+def main():
+    """Main function"""
     root = tk.Tk()
-    app = EyeStateApp(root, "Eye State Detection")
+    app = EyeDetectionApp(root)
+    
+    # Handle window close
+    root.protocol("WM_DELETE_WINDOW", app.exit_app)
+    
+    # Start GUI
     root.mainloop()
-        # Right Eye Status
+
+if __name__ == "__main__":
+    main()

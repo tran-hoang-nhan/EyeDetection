@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup script cho MRL Eye Dataset với kagglehub
+Setup script cho MRL Eye Dataset
 """
 import os
 import shutil
@@ -101,49 +101,23 @@ def download_dataset():
         return False
 
 
-def check_dataset():
-    """Kiểm tra MRL Eye Dataset"""
-    open_path = 'data/eyes/open'
-    closed_path = 'data/eyes/closed'
-
-    if (not os.path.exists(open_path) or not os.listdir(open_path) or
-            not os.path.exists(closed_path) or not os.listdir(closed_path)):
-        print("⚠️ MRL Eye Dataset chưa có!")
-        return download_dataset()
-    else:
-        print("✅ Dataset đã có sẵn")
-        return True
-
-
-def check_trained_model():
-    """Kiểm tra trained model"""
-    if os.path.exists('models/eye_classifier.pkl'):
-        print("✅ Trained model đã có")
-        return True
-    else:
-        print("⚠️ Chưa có trained model - chạy 'python train.py'")
-        return False
-
-
 def main():
-    print("🚀 Setup MRL Eye Dataset...")
+    """Main setup workflow"""
+    print("🎯 Eye State Detection - Setup")
+    print("=" * 50)
 
+    # Create directories
     create_directories()
-    dataset_ok = check_dataset()
-    model_ok = check_trained_model()
 
-    print("\n📋 Các bước tiếp theo:")
+    # Download dataset
+    print("\n📦 Dataset Setup")
+    download_dataset()
 
-    if not dataset_ok:
-        print("   1. Tải MRL Eye Dataset từ Kaggle")
-        print("   2. python dataset.py (organize dataset)")
-        print("   3. python train.py (train model)")
-    elif not model_ok:
-        print("   1. python train.py (train model)")
-    else:
-        print("   ✅ Tất cả đã sẵn sàng!")
+    print("\n✅ Setup completed!")
+    print("📋 Các bước tiếp theo:")
+    print("   1. Chạy: python train.py (để train mô hình)")
+    print("   2. Chạy: python app.py (để test giao diện)")
 
-    print("   🚀 python app.py (chạy ứng dụng)")
 
 
 if __name__ == "__main__":

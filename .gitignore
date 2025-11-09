@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,33 +19,52 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+PIPFILE.lock
 
 # Virtual Environment
 .venv/
 venv/
 ENV/
 env/
+.env
+
+# Data and Models
+data/
+models/
+*.pkl
+*.h5
+*.model
+*.dat
+*.joblib
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Project specific
-data/eyes/
-models/*.pkl
-models/*.h5
-models/*.png
+# Logs
 *.log
+logs/
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Model files
-*.model
-*.joblib
+# Temporary files
+*.tmp
+*.temp
+
+# Images and Videos
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.avi
+*.mov
+CHUONG3_PHAN_TICH_HE_THONG.md

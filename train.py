@@ -123,7 +123,7 @@ class AdvancedEyeStateClassifier:
             grid_search = GridSearchCV(
                 self.pipelines[name],
                 param_grid,
-                cv=3,
+                cv=5,
                 scoring='accuracy',
                 n_jobs=-1
             )

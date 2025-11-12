@@ -2,19 +2,10 @@
 
 ## 📋 Mô Tả
 Hệ thống phát hiện trạng thái mắt (mở/nhắm) sử dụng:
-- **MTCNN**: Để phát hiện khuôn mặt
+- **Haar Cascade**: Để phát hiện khuôn mặt
 - **Dlib**: Để phát hiện landmarks (điểm đặc trưng) và trích xuất vùng mắt
 - **SVM**: Mô hình machine learning phân loại mắt mở/nhắm
 - **Tkinter**: Giao diện Windows đơn giản để test
-
-## 🎯 Tính Năng
-✅ Phát hiện khuôn mặt bằng MTCNN (thay vì Haar Cascade)
-✅ Trích xuất vùng mắt bằng dlib landmarks  
-✅ Phân loại mắt mở/nhắm bằng SVM
-✅ Giao diện Windows hiển thị trạng thái mắt trái/phải
-✅ Hiển thị "Open" (xanh lá) hoặc "Closed" (đỏ)
-✅ Không sử dụng tiếng beep cảnh báo
-✅ Tách feature_extractor vào thư mục utils/
 
 ## 📁 Cấu Trúc Project
 ```

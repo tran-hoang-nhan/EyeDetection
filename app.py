@@ -26,9 +26,18 @@ class EyeDetectionApp:
     
     def setup_ui(self):
         """Setup the user interface"""
+        # Configure root window for centering
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        
         # Main frame
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Configure columns for centering content
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(2, weight=1)
         
         # Title
         title_label = ttk.Label(main_frame, text="Eye State Detection System", 
@@ -39,33 +48,40 @@ class EyeDetectionApp:
         self.video_label = ttk.Label(main_frame, text="Camera feed will appear here")
         self.video_label.grid(row=1, column=0, columnspan=3, pady=(0, 20))
         
-        # Eye state display
-        state_frame = ttk.LabelFrame(main_frame, text="Eye States", padding="10")
-        state_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
+        # Configure columns for centering content below video
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(2, weight=1)
+        
+        # Eye state display - centered in column 1
+        state_frame = ttk.LabelFrame(main_frame, text="Eye States", padding="15")
+        state_frame.grid(row=2, column=1, pady=(0, 20))
+        state_frame.columnconfigure(0, weight=1)
+        state_frame.columnconfigure(1, weight=1)
         
         # Left eye
-        ttk.Label(state_frame, text="Left Eye:").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(state_frame, text="Left Eye:", font=("Arial", 11)).grid(row=0, column=0, sticky=tk.W, padx=(0, 15))
         self.left_eye_label = ttk.Label(state_frame, text="Unknown", 
                                        font=("Arial", 12, "bold"))
-        self.left_eye_label.grid(row=0, column=1, padx=(10, 0), sticky=tk.W)
+        self.left_eye_label.grid(row=0, column=1, sticky=tk.W)
         
         # Right eye
-        ttk.Label(state_frame, text="Right Eye:").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(state_frame, text="Right Eye:", font=("Arial", 11)).grid(row=1, column=0, sticky=tk.W, padx=(0, 15), pady=(10, 0))
         self.right_eye_label = ttk.Label(state_frame, text="Unknown", 
                                         font=("Arial", 12, "bold"))
-        self.right_eye_label.grid(row=1, column=1, padx=(10, 0), sticky=tk.W)
+        self.right_eye_label.grid(row=1, column=1, sticky=tk.W, pady=(10, 0))
         
-        # Control buttons
+        # Control buttons - centered in column 1
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=3, column=0, columnspan=3, pady=(0, 10))
+        button_frame.grid(row=3, column=1, pady=(20, 10))
         
         self.start_button = ttk.Button(button_frame, text="Start Detection", 
                                       command=self.start_detection)
-        self.start_button.grid(row=0, column=0, padx=(0, 10))
+        self.start_button.grid(row=0, column=0, padx=(0, 15))
         
         self.stop_button = ttk.Button(button_frame, text="Stop Detection", 
                                      command=self.stop_detection, state="disabled")
-        self.stop_button.grid(row=0, column=1, padx=(0, 10))
+        self.stop_button.grid(row=0, column=1, padx=(0, 15))
         
         self.exit_button = ttk.Button(button_frame, text="Exit", 
                                      command=self.exit_app)
@@ -75,7 +91,7 @@ class EyeDetectionApp:
         self.status_var = tk.StringVar()
         self.status_var.set("Ready")
         status_bar = ttk.Label(main_frame, textvariable=self.status_var, 
-                              relief=tk.SUNKEN, anchor=tk.W)
+                              relief=tk.SUNKEN, anchor=tk.W, font=("Arial", 9))
         status_bar.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 0))
     
     def start_detection(self):

@@ -14,7 +14,7 @@ class MLClassifier:
                 self.model = model_data['pipeline']
                 self.model_name = model_data['pipeline_name']
                 self.accuracy = model_data['accuracy']
-                print(f"✅ Loaded ML model: {self.model_name} (accuracy: {self.accuracy:.3f})")
+                print(f"✓ Loaded ML model: {self.model_name} (accuracy: {self.accuracy:.3f})")
         except Exception as e:
             print(f"❌ Failed to load ML model: {e}")
             print("Run train.py first to train the model.")

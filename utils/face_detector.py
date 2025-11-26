@@ -6,6 +6,7 @@ class FaceDetector:
     def __init__(self):
         # Haar Cascade
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        print("✓ Haar Cascade loaded successfully")
         
         # Dlib detector
         self.dlib_detector = dlib.get_frontal_face_detector()
@@ -13,8 +14,9 @@ class FaceDetector:
         # Dlib predictor
         try:
             self.predictor = dlib.shape_predictor('models/shape_predictor_68_face_landmarks.dat')
+            print("✓ Dlib shape predictor (68 landmarks) loaded successfully")
         except:
-            print("Warning: dlib shape predictor not found")
+            print("✗ Warning: dlib shape predictor not found")
             self.predictor = None
     
     def detect_faces_haar(self, frame):

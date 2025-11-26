@@ -4,5 +4,4 @@ numpy
 kagglehub
 mtcnn
 dlib
-tensorflow
 pillow

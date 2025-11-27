@@ -2,30 +2,19 @@ import cv2
 import numpy as np
 
 def preprocess_eye_image(image):
-    """
-    Preprocess eye image for better feature extraction
-    """
-    # Convert to grayscale if needed
     if len(image.shape) == 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     image = clahe.apply(image)
-
-    # Gaussian blur to reduce noise
     image = cv2.GaussianBlur(image, (3, 3), 0)
-
     return image
 
 def extract_eye_features(image):
-    """Extract 25 advanced features from eye region"""
     if image is None or image.size == 0:
         return np.zeros(25)
-
     image = cv2.resize(image, (32, 32))
     features = []
-
+    
     # Statistical features (6)
     features.extend([
         np.mean(image), np.std(image), np.var(image),

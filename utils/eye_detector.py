@@ -108,7 +108,7 @@ class EyeStateDetector:
             
             state_text = f"L:{result['left_ml_state']} R:{result['right_ml_state']}"
             cv2.putText(frame, state_text, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-            
+             
             ear_text = f"L_EAR: {result['left_ear']:.3f} | R_EAR: {result['right_ear']:.3f}"
             cv2.putText(frame, ear_text, (x, y + h + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             

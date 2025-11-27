@@ -2,7 +2,7 @@
 Machine Learning Predictor Module
 """
 import pickle
-from .feature_extractor import extract_eye_features
+from .feature_extractor import extract_eye_features, preprocess_eye_image
 
 class MLPredictor:
     def __init__(self):
@@ -18,12 +18,12 @@ class MLPredictor:
                 model_data = pickle.load(f)
                 if isinstance(model_data, dict):
                     self.model = model_data.get('pipeline', model_data.get('model'))
-                    print(f"✅ ML model loaded: {model_data.get('pipeline_name', 'Unknown')}")
+                    print(f"✓ ML model loaded: {model_data.get('pipeline_name', 'Unknown')}")
                 else:
                     self.model = model_data
-                    print("✅ ML model loaded")
+                    print("✓ ML model loaded")
         except Exception as e:
-            print(f"⚠️ ML model not found: {e}")
+            print(f" ML model not found: {e}")
     
     def predict_eye_state(self, eye_region):
         """Predict eye state (closed/open)"""
@@ -31,7 +31,8 @@ class MLPredictor:
             return None
             
         try:
-            features = extract_eye_features(eye_region)
+            processed = preprocess_eye_image(eye_region)
+            features = extract_eye_features(processed)
             features = features.reshape(1, -1)
             
             if hasattr(self.model, 'predict_proba'):

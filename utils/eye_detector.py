@@ -1,17 +1,21 @@
 import cv2
 import numpy as np
 from .face_detector import FaceDetector
-from .ml_classifier import MLClassifier
+from .ml_predictor import MLPredictor
+from .ear_calculator import calculate_left_ear, calculate_right_ear
 
 class EyeStateDetector:
     def __init__(self):
         # Initialize components
         self.face_detector = FaceDetector()
-        self.ml_classifier = MLClassifier()
+        self.ml_predictor = MLPredictor()
         
         # Eye landmarks indices
         self.LEFT_EYE = list(range(36, 42))
         self.RIGHT_EYE = list(range(42, 48))
+        
+        # Detection thresholds
+        self.EAR_THRESHOLD = 0.2 # dlib EAR threshold (< 0.25 = mắt đóng)
 
     def extract_eye_region(self, image, landmarks, eye_indices):
         """Extract eye region from landmarks"""
@@ -32,7 +36,7 @@ class EyeStateDetector:
         return eye_region, (x, y, w, h)
 
     def process_frame(self, frame):
-        """Main processing function - uses ML classifier only"""
+        """Main processing function - uses EAR threshold + ML prediction combined"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         result_frame = frame.copy()
         
@@ -46,19 +50,28 @@ class EyeStateDetector:
             landmarks = self.face_detector.get_landmarks(frame, (x, y, w, h))
             
             if landmarks is not None:
-                # Extract eye regions for ML
+                left_ear = calculate_left_ear(landmarks)
+                right_ear = calculate_right_ear(landmarks)
+                ear_value = (left_ear + right_ear) / 2.0  # Average for display
+                
                 left_eye_region, left_bbox = self.extract_eye_region(gray, landmarks, self.LEFT_EYE)
                 right_eye_region, right_bbox = self.extract_eye_region(gray, landmarks, self.RIGHT_EYE)
                 
-                # ML predictions
-                left_ml_state, left_ml_conf = self.ml_classifier.predict_eye_state(left_eye_region)
-                right_ml_state, right_ml_conf = self.ml_classifier.predict_eye_state(right_eye_region)
+                left_ml_conf = self.ml_predictor.predict_eye_state(left_eye_region)
+                right_ml_conf = self.ml_predictor.predict_eye_state(right_eye_region)
                 
-                # Final state based on both eyes
-                if left_ml_state == "Open" or right_ml_state == "Open":
-                    final_state = "Open"
+                left_ml_conf = left_ml_conf if left_ml_conf is not None else 0.5
+                right_ml_conf = right_ml_conf if right_ml_conf is not None else 0.5
+            
+                if left_ear < 0.15:
+                    left_ml_state = "Closed"  
                 else:
-                    final_state = "Closed"
+                    left_ml_state = "Closed" if left_ml_conf > 0.5 else "Open"
+                
+                if right_ear < 0.15:
+                    right_ml_state = "Closed" 
+                else:
+                    right_ml_state = "Closed" if right_ml_conf > 0.5 else "Open"
                 
                 result = {
                     'face_bbox': (x, y, w, h),
@@ -69,7 +82,9 @@ class EyeStateDetector:
                     'right_ml_state': right_ml_state,
                     'left_ml_conf': left_ml_conf,
                     'right_ml_conf': right_ml_conf,
-                    'final_state': final_state
+                    'ear_value': ear_value,
+                    'left_ear': left_ear,
+                    'right_ear': right_ear
                 }
                 
                 results.append(result)
@@ -77,33 +92,27 @@ class EyeStateDetector:
         return result_frame, results
     
     def draw_results(self, frame, results):
-        """Draw detection results on frame"""
+        """Draw detection results on frame with 68 landmarks and individual EAR"""
         for result in results:
             x, y, w, h = result['face_bbox']
             
-            # Draw face rectangle
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             
-            # Draw eye rectangles
-            lx, ly, lw, lh = result['left_eye_bbox']
-            rx, ry, rw, rh = result['right_eye_bbox']
+            landmarks = result['landmarks']
+            for i in range(len(landmarks)):
+                px, py = landmarks[i]
+                if 36 <= i <= 47:
+                    cv2.circle(frame, (int(px), int(py)), 3, (0, 0, 255), -1)
+                else:
+                    cv2.circle(frame, (int(px), int(py)), 2, (0, 255, 255), -1)
             
-            # Color based on state
-            color = (0, 255, 0) if result['final_state'] == "Open" else (0, 0, 255)
-            
-            cv2.rectangle(frame, (lx, ly), (lx + lw, ly + lh), color, 2)
-            cv2.rectangle(frame, (rx, ry), (rx + rw, ry + rh), color, 2)
-            
-            # Draw text
-            text = f"Eyes: {result['final_state']}"
-            cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-            
-            # Draw states
             state_text = f"L:{result['left_ml_state']} R:{result['right_ml_state']}"
             cv2.putText(frame, state_text, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             
-            # Draw ML confidence
+            ear_text = f"L_EAR: {result['left_ear']:.3f} | R_EAR: {result['right_ear']:.3f}"
+            cv2.putText(frame, ear_text, (x, y + h + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
             conf_text = f"ML: L{result['left_ml_conf']:.2f} R{result['right_ml_conf']:.2f}"
-            cv2.putText(frame, conf_text, (x, y + h + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(frame, conf_text, (x, y + h + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         
         return frame
